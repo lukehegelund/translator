@@ -506,7 +506,7 @@
     };
 
     // ── Init ──────────────────────────────────────────────────
-    const DEFAULT_WEBHOOK = 'https://script.google.com/macros/s/AKfycbxSBROqSze6KE_6aVYj7zeoYGk2qZKBMgMixggUznJaDSPGDFVUtNga-r3RYPBQdR0GPg/exec';
+    const DEFAULT_WEBHOOK = 'https://script.google.com/macros/s/AKfycby4o-w87Yu3SMTmD7i-eT39d1BUpJIkebXbPSivGOLx7bFFiwgoGHTNS2wZWxzsyxPljw/exec';
 
     window.onload = () => {
       const saved = localStorage.getItem('currentLang');
@@ -610,6 +610,7 @@
       const targetText  = directionEnglishFirst ? translated : original;
 
       const entry = {
+        action: 'save_translation',
         original: englishText,
         translated: targetText,
         language: cfg.tab,
