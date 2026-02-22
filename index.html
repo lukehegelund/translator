@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>Luke's Translator</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f0f4f8;
+      min-height: 100vh;
+      padding: 16px;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 1.4rem;
+      color: #1a202c;
+      margin-bottom: 16px;
+      font-weight: 700;
+    }
+
+    .lang-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    select {
+      flex: 1;
+      padding: 10px 12px;
+      border: 2px solid #e2e8f0;
+      border-radius: 10px;
+      font-size: 1rem;
+      background: white;
+      color: #1a202c;
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+    }
+
+    .swap-btn {
+      background: #4a6fa5;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 38px;
+      height: 38px;
+      font-size: 1.2rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    textarea {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #e2e8f0;
+      border-radius: 10px;
+      font-size: 1rem;
+      resize: none;
+      background: white;
+      color: #1a202c;
+      line-height: 1.5;
+      min-height: 110px;
+    }
+
+    textarea:focus {
+      outline: none;
+      border-color: #4a6fa5;
+    }
+
+    .result-box {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #e2e8f0;
+      border-radius: 10px;
+      font-size: 1rem;
+      background: #f8fafc;
+      color: #1a202c;
+      min-height: 110px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+      margin-bottom: 12px;
+    }
+
+    .result-box.placeholder {
+      color: #a0aec0;
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 10px;
+      margin: 12px 0;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 13px;
+      border: none;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+
+    .btn:active { opacity: 0.8; }
+
+    .btn-translate {
+      background: #4a6fa5;
+      color: white;
+    }
+
+    .btn-save {
+      background: #38a169;
+      color: white;
+    }
+
+    .btn-clear {
+      background: #e2e8f0;
+      color: #4a5568;
+      flex: 0 0 auto;
+      padding: 13px 16px;
+    }
+
+    .status {
+      text-align: center;
+      font-size: 0.85rem;
+      margin-bottom: 12px;
+      min-height: 20px;
+      font-weight: 500;
+    }
+
+    .status.success { color: #38a169; }
+    .status.error { color: #e53e3e; }
+    .status.loading { color: #4a6fa5; }
+
+    .history-section {
+      margin-top: 20px;
+    }
+
+    .history-section h2 {
+      font-size: 1rem;
+      color: #4a5568;
+      margin-bottom: 10px;
+      font-weight: 600;
+    }
+
+    .history-item {
+      background: white;
+      border-radius: 10px;
+      padding: 10px 12px;
+      margin-bottom: 8px;
+      border: 1px solid #e2e8f0;
+      font-size: 0.9rem;
+    }
+
+    .history-item .original { color: #4a5568; margin-bottom: 4px; }
+    .history-item .translated { color: #1a202c; font-weight: 600; }
+    .history-item .meta { color: #a0aec0; font-size: 0.78rem; margin-top: 4px; }
+
+    .copy-btn {
+      float: right;
+      background: none;
+      border: none;
+      font-size: 1rem;
+      cursor: pointer;
+      color: #a0aec0;
+      padding: 0 4px;
+    }
+
+    .sheet-config {
+      background: white;
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 16px;
+      border: 2px solid #e2e8f0;
+    }
+
+    .sheet-config label {
+      font-size: 0.82rem;
+      color: #718096;
+      display: block;
+      margin-bottom: 4px;
+      font-weight: 600;
+    }
+
+    .sheet-config input {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      color: #1a202c;
+    }
+
+    .sheet-config input:focus {
+      outline: none;
+      border-color: #4a6fa5;
+    }
+
+    details summary {
+      cursor: pointer;
+      font-size: 0.85rem;
+      color: #718096;
+      margin-bottom: 8px;
+      user-select: none;
+    }
+
+    .char-count {
+      text-align: right;
+      font-size: 0.78rem;
+      color: #a0aec0;
+      margin-top: 4px;
+      margin-bottom: 8px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🌐 Luke's Translator</h1>
+
+  <!-- Language selector -->
+  <div class="lang-row">
+    <select id="fromLang">
+      <option value="en">🇺🇸 English</option>
+      <option value="es">🇪🇸 Spanish</option>
+      <option value="da">🇩🇰 Danish</option>
+      <option value="ru">🇷🇺 Russian</option>
+      <option value="fr">🇫🇷 French</option>
+      <option value="de">🇩🇪 German</option>
+      <option value="it">🇮🇹 Italian</option>
+      <option value="pt">🇵🇹 Portuguese</option>
+      <option value="ja">🇯🇵 Japanese</option>
+      <option value="zh">🇨🇳 Chinese</option>
+      <option value="ko">🇰🇷 Korean</option>
+      <option value="ar">🇸🇦 Arabic</option>
+    </select>
+    <button class="swap-btn" onclick="swapLanguages()" title="Swap languages">⇄</button>
+    <select id="toLang">
+      <option value="es">🇪🇸 Spanish</option>
+      <option value="en">🇺🇸 English</option>
+      <option value="da">🇩🇰 Danish</option>
+      <option value="ru">🇷🇺 Russian</option>
+      <option value="fr">🇫🇷 French</option>
+      <option value="de">🇩🇪 German</option>
+      <option value="it">🇮🇹 Italian</option>
+      <option value="pt">🇵🇹 Portuguese</option>
+      <option value="ja">🇯🇵 Japanese</option>
+      <option value="zh">🇨🇳 Chinese</option>
+      <option value="ko">🇰🇷 Korean</option>
+      <option value="ar">🇸🇦 Arabic Arabic</option>
+    </select>
+  </div>
+
+  <!-- Input -->
+  <textarea id="inputText" placeholder="Type text to translate..." oninput="updateCharCount()" onkeydown="handleKey(event)"></textarea>
+  <div class="char-count"><span id="charCount">0</span> characters</div>
+
+  <!-- Translate button -->
+  <div class="btn-row">
+    <button class="btn btn-translate" onclick="translate()">Translate</button>
+    <button class="btn btn-clear" onclick="clearAll()">✕</button>
+  </div>
+
+  <!-- Status -->
+  <div class="status" id="status"></div>
+
+  <!-- Result -->
+  <div class="result-box placeholder" id="resultBox">Translation will appear here...</div>
+
+  <!-- Save button -->
+  <div class="btn-row">
+    <button class="btn btn-save" onclick="saveToSheet()" id="saveBtn" disabled>💾 Save to Google Sheet</button>
+    <button class="btn btn-clear" onclick="copyResult()" id="copyBtn" style="flex:0 0 auto;padding:13px 16px;" title="Copy">📋</button>
+  </div>
+
+  <!-- Google Sheet config -->
+  <details>
+    <summary>⚙️ Google Sheet settings</summary>
+    <div class="sheet-config">
+      <label>Sheet ID</label>
+      <input type="text" id="sheetId" placeholder="Paste your Google Sheet ID here" />
+      <label style="margin-top:8px;">Sheet Tab Name</label>
+      <input type="text" id="sheetTab" value="Translations" />
+      <label style="margin-top:8px;">Your Email (for API calls)</label>
+      <input type="email" id="userEmail" value="lukehegelund@gmail.com" />
+    </div>
+  </details>
+
+  <!-- Local history -->
+  <div class="history-section">
+    <h2>📋 Recent Translations</h2>
+    <div id="historyList"></div>
+  </div>
+
+  <script>
+    // ─── State ───────────────────────────────────────────────
+    let currentTranslation = null;
+    let history = JSON.parse(localStorage.getItem('translationHistory') || '[]');
+
+    // ─── Language labels ──────────────────────────────────────
+    const langLabels = {
+      en: 'English', es: 'Spanish', da: 'Danish', ru: 'Russian',
+      fr: 'French', de: 'German', it: 'Italian', pt: 'Portuguese',
+      ja: 'Japanese', zh: 'Chinese', ko: 'Korean', ar: 'Arabic'
+    };
+
+    // ─── On load ──────────────────────────────────────────────
+    window.onload = () => {
+      renderHistory();
+      // Load saved sheet settings
+      const savedId = localStorage.getItem('sheetId');
+      const savedTab = localStorage.getItem('sheetTab');
+      if (savedId) document.getElementById('sheetId').value = savedId;
+      if (savedTab) document.getElementById('sheetTab').value = savedTab;
+    };
+
+    // ─── Char count ───────────────────────────────────────────
+    function updateCharCount() {
+      const len = document.getElementById('inputText').value.length;
+      document.getElementById('charCount').textContent = len;
+    }
+
+    // ─── Enter key shortcut ───────────────────────────────────
+    function handleKey(e) {
+      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) translate();
+    }
+
+    // ─── Swap languages ───────────────────────────────────────
+    function swapLanguages() {
+      const from = document.getElementById('fromLang');
+      const to = document.getElementById('toLang');
+      const tmp = from.value;
+      from.value = to.value;
+      to.value = tmp;
+
+      // Also swap text if there's a translation
+      if (currentTranslation) {
+        document.getElementById('inputText').value = currentTranslation;
+        updateCharCount();
+        clearResult();
+      }
+    }
+
+    // ─── Translate ────────────────────────────────────────────
+    async function translate() {
+      const text = document.getElementById('inputText').value.trim();
+      if (!text) { setStatus('Please enter some text.', 'error'); return; }
+
+      const from = document.getElementById('fromLang').value;
+      const to = document.getElementById('toLang').value;
+
+      setStatus('Translating...', 'loading');
+      setResult('', true);
+      document.getElementById('saveBtn').disabled = true;
+
+      try {
+        const langPair = `${from}|${to}`;
+        const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${langPair}&de=lukehegelund@gmail.com`;
+
+        const response = await fetch(url);
+        const data = await response.json();
+
+        if (data.responseStatus === 200) {
+          const translated = data.responseData.translatedText;
+          currentTranslation = translated;
+          setResult(translated, false);
+          setStatus('✓ Translated', 'success');
+          document.getElementById('saveBtn').disabled = false;
+        } else {
+          setStatus('Translation failed. Try again.', 'error');
+        }
+      } catch (err) {
+        setStatus('Network error. Check your connection.', 'error');
+      }
+    }
+
+    // ─── Save to Google Sheet (via Apps Script webhook) ───────
+    async function saveToSheet() {
+      const sheetId = document.getElementById('sheetId').value.trim();
+      const sheetTab = document.getElementById('sheetTab').value.trim() || 'Translations';
+      const userEmail = document.getElementById('userEmail').value.trim();
+
+      // Save settings
+      localStorage.setItem('sheetId', sheetId);
+      localStorage.setItem('sheetTab', sheetTab);
+
+      if (!currentTranslation) { setStatus('Nothing to save.', 'error'); return; }
+
+      const original = document.getElementById('inputText').value.trim();
+      const from = langLabels[document.getElementById('fromLang').value] || document.getElementById('fromLang').value;
+      const to = langLabels[document.getElementById('toLang').value] || document.getElementById('toLang').value;
+      const now = new Date().toLocaleString();
+
+      // Save to local history
+      const entry = { original, translated: currentTranslation, from, to, time: now };
+      history.unshift(entry);
+      if (history.length > 50) history = history.slice(0, 50);
+      localStorage.setItem('translationHistory', JSON.stringify(history));
+      renderHistory();
+
+      // If no sheet ID, just save locally
+      if (!sheetId) {
+        setStatus('✓ Saved locally (no Sheet ID configured)', 'success');
+        return;
+      }
+
+      // Try to post to Google Apps Script webhook
+      const webhookUrl = localStorage.getItem('webhookUrl');
+      if (!webhookUrl) {
+        setStatus('✓ Saved locally. Set up webhook to sync to Sheets.', 'success');
+        return;
+      }
+
+      setStatus('Saving to Sheet...', 'loading');
+      try {
+        await fetch(webhookUrl, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ original, translated: currentTranslation, from, to, time: now, sheetId, sheetTab })
+        });
+        setStatus('✓ Saved to Google Sheet!', 'success');
+      } catch (err) {
+        setStatus('✓ Saved locally (Sheet sync failed)', 'success');
+      }
+    }
+
+    // ─── Copy result ──────────────────────────────────────────
+    function copyResult() {
+      if (!currentTranslation) return;
+      navigator.clipboard.writeText(currentTranslation).then(() => {
+        setStatus('✓ Copied!', 'success');
+        setTimeout(() => setStatus('', ''), 2000);
+      });
+    }
+
+    // ─── Clear ────────────────────────────────────────────────
+    function clearAll() {
+      document.getElementById('inputText').value = '';
+      updateCharCount();
+      clearResult();
+      setStatus('', '');
+    }
+
+    function clearResult() {
+      currentTranslation = null;
+      setResult('', true);
+      document.getElementById('saveBtn').disabled = true;
+    }
+
+    // ─── UI helpers ───────────────────────────────────────────
+    function setStatus(msg, type) {
+      const el = document.getElementById('status');
+      el.textContent = msg;
+      el.className = `status ${type}`;
+    }
+
+    function setResult(text, isPlaceholder) {
+      const el = document.getElementById('resultBox');
+      el.textContent = isPlaceholder ? 'Translation will appear here...' : text;
+      el.className = isPlaceholder ? 'result-box placeholder' : 'result-box';
+    }
+
+    // ─── History ──────────────────────────────────────────────
+    function renderHistory() {
+      const list = document.getElementById('historyList');
+      if (history.length === 0) {
+        list.innerHTML = '<div style="color:#a0aec0;font-size:0.85rem;text-align:center;">No translations yet</div>';
+        return;
+      }
+      list.innerHTML = history.slice(0, 10).map((item, i) => `
+        <div class="history-item">
+          <button class="copy-btn" onclick="reuseHistory(${i})" title="Use again">↩</button>
+          <div class="original">${escHtml(item.original)} <span style="color:#a0aec0;font-size:0.78rem">(${item.from})</span></div>
+          <div class="translated">${escHtml(item.translated)} <span style="color:#a0aec0;font-weight:400;font-size:0.78rem">(${item.to})</span></div>
+          <div class="meta">${item.time}</div>
+        </div>
+      `).join('');
+    }
+
+    function reuseHistory(i) {
+      const item = history[i];
+      document.getElementById('inputText').value = item.original;
+      updateCharCount();
+      // Set language selectors
+      const fromSel = document.getElementById('fromLang');
+      const toSel = document.getElementById('toLang');
+      const fromCode = Object.keys(langLabels).find(k => langLabels[k] === item.from);
+      const toCode = Object.keys(langLabels).find(k => langLabels[k] === item.to);
+      if (fromCode) fromSel.value = fromCode;
+      if (toCode) toSel.value = toCode;
+    }
+
+    function escHtml(str) {
+      return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+  </script>
+</body>
+</html>
