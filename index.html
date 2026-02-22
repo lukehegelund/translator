@@ -129,13 +129,19 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 6px;
+      gap: 8px;
       margin-top: 10px;
-      font-size: 0.75rem;
-      color: var(--muted);
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: var(--text);
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 7px 14px;
+      letter-spacing: 0.01em;
     }
 
-    .direction-label .arrow { color: var(--accent); font-size: 0.85rem; }
+    .direction-label .arrow { color: var(--accent); font-size: 1rem; }
 
     /* ── Main card ──────────────────────────────────── */
     .card {
@@ -159,9 +165,9 @@
       outline: none;
       color: var(--text);
       font-size: 1.05rem;
-      line-height: 1.6;
+      line-height: 1.5;
       resize: none;
-      min-height: 100px;
+      min-height: 72px;
       font-family: inherit;
     }
 
@@ -180,24 +186,41 @@
     }
 
     .clear-btn {
-      background: none;
-      border: none;
-      color: var(--muted);
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
       cursor: pointer;
-      font-size: 0.8rem;
-      padding: 4px 8px;
-      border-radius: 6px;
-      transition: color 0.2s;
+      font-size: 0.78rem;
+      font-weight: 600;
+      padding: 5px 12px;
+      border-radius: 8px;
+      transition: all 0.2s;
     }
 
-    .clear-btn:active { color: var(--text); }
+    .clear-btn:active { background: var(--border); }
 
     /* Result area */
     .result-area {
       padding: 16px;
-      min-height: 100px;
+      min-height: 80px;
       position: relative;
     }
+
+    /* Delete last translation button */
+    .delete-btn {
+      background: none;
+      border: 1px solid rgba(248,113,113,0.3);
+      color: #f87171;
+      cursor: pointer;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 7px;
+      transition: all 0.2s;
+      display: none;
+    }
+    .delete-btn.visible { display: inline-block; }
+    .delete-btn:active { background: rgba(248,113,113,0.15); }
 
     .result-text {
       font-size: 1.05rem;
@@ -271,7 +294,7 @@
 
     /* ── Translate button ───────────────────────────── */
     .translate-btn {
-      margin: 14px 20px 0;
+      margin: 10px 20px 0;
       width: calc(100% - 40px);
       padding: 15px;
       background: linear-gradient(135deg, var(--accent), var(--accent2));
@@ -462,6 +485,7 @@
       <div id="resultContent" class="result-placeholder">Translation appears here</div>
       <div class="result-actions">
         <span class="status-badge" id="statusBadge"></span>
+        <button class="delete-btn" id="deleteBtn" onclick="deleteLastTranslation()" title="Undo save">✕ Delete</button>
         <button class="speak-btn" id="speakBtn" onclick="speakResult()" title="Read aloud">🔊</button>
         <button class="copy-btn" onclick="copyResult()">Copy</button>
       </div>
@@ -496,6 +520,7 @@
   <script>
     // ── State ─────────────────────────────────────────────────
     let currentTranslation = null;
+    let lastSavedEntry = null; // tracks last entry sent to sheet for undo/delete
     let currentLang = 'es'; // es or da
     let directionEnglishFirst = true; // true = EN→target, false = target→EN
     let txHistory = JSON.parse(localStorage.getItem('txHistory2') || '[]');
@@ -625,16 +650,48 @@
       const webhookUrl = localStorage.getItem('srsWebhookUrl') || DEFAULT_WEBHOOK;
 
       try {
-        // Use regular fetch (not no-cors) so Android Chrome follows the Apps Script redirect
         const resp = await fetch(webhookUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'text/plain' },
           body: JSON.stringify(entry)
         });
-        if (resp.ok) showSaveIndicator();
+        if (resp.ok) {
+          showSaveIndicator();
+          lastSavedEntry = entry; // store for potential undo
+          document.getElementById('deleteBtn').classList.add('visible');
+        }
       } catch(e) {
         // Silent fail — still saved locally
       }
+    }
+
+    // ── Delete last translation ───────────────────────────────────────────────
+    async function deleteLastTranslation() {
+      if (!lastSavedEntry) return;
+      const entry = lastSavedEntry;
+      lastSavedEntry = null;
+      document.getElementById('deleteBtn').classList.remove('visible');
+
+      const webhookUrl = localStorage.getItem('srsWebhookUrl') || DEFAULT_WEBHOOK;
+      try {
+        await fetch(webhookUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain' },
+          body: JSON.stringify({
+            action: 'delete_translation',
+            original: entry.original,
+            translated: entry.translated,
+            language: entry.language
+          })
+        });
+      } catch(e) { /* silent */ }
+
+      // Also remove from local history
+      txHistory = txHistory.filter((h, i) => i !== 0);
+      localStorage.setItem('txHistory2', JSON.stringify(txHistory));
+      renderHistory();
+      setStatus('Deleted', 'error');
+      setTimeout(() => setStatus('', ''), 2000);
     }
 
     function showSaveIndicator() {
@@ -662,6 +719,8 @@
 
     function clearResult() {
       currentTranslation = null;
+      lastSavedEntry = null;
+      document.getElementById('deleteBtn').classList.remove('visible');
       setResult(null);
     }
 
