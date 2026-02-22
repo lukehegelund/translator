@@ -349,6 +349,30 @@
     }
     .stage-dot.filled { background: var(--accent2); }
 
+    /* ── Card speak button ── */
+    .card-speak-btn {
+      margin-top: 10px;
+      background: rgba(108, 138, 255, 0.12);
+      border: 1.5px solid rgba(108, 138, 255, 0.3);
+      color: var(--accent);
+      border-radius: 20px;
+      padding: 6px 16px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.18s;
+      letter-spacing: 0.02em;
+    }
+    .card-speak-btn:active { background: rgba(108, 138, 255, 0.25); transform: scale(0.95); }
+    .card-speak-btn.speaking {
+      animation: pulse-speak 1s infinite;
+      border-color: var(--accent2);
+      color: var(--accent2);
+    }
+    @keyframes pulse-speak {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.55; }
+    }
+
     /* ── Swipe feedback overlay ── */
     .swipe-overlay {
       position: fixed;
@@ -414,6 +438,7 @@
           <span class="card-lang-badge" id="langBadge2">—</span>
           <div class="card-label" id="backLabel">Translation</div>
           <div class="card-word" id="backWord">—</div>
+          <button class="card-speak-btn" id="cardSpeakBtn" onclick="event.stopPropagation(); speakCurrent()">🔊</button>
         </div>
       </div>
     </div>
@@ -671,6 +696,8 @@ function flipCard() {
   document.getElementById('card').classList.add('flipped');
   document.getElementById('answerBtns').classList.add('visible');
   document.getElementById('srsInfo').classList.add('visible');
+  // Auto-speak the translation after the flip animation
+  setTimeout(() => speakCurrent(), 550);
 }
 
 // ── Answer ────────────────────────────────────────────────────────────────
@@ -754,6 +781,57 @@ function showEmpty(msg) {
 
 function restartSession() {
   buildQueue();
+}
+
+// ── Text-to-Speech ────────────────────────────────────────────────────────
+const TTS_LOCALE = {
+  Spanish: 'es-ES',
+  Danish:  'da-DK',
+  Russian: 'ru-RU',
+  English: 'en-US',
+};
+
+function speakCurrent() {
+  if (currentIdx >= queue.length) return;
+  const word = queue[currentIdx];
+  const locale = TTS_LOCALE[word.language] || 'en-US';
+  speak(word.translation, locale);
+}
+
+function speak(text, locale) {
+  if (!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+
+  const btn = document.getElementById('cardSpeakBtn');
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.lang = locale;
+
+  // Pick the best available voice
+  const trySetVoice = () => {
+    const voices = window.speechSynthesis.getVoices();
+    if (voices.length > 0) {
+      const exact   = voices.find(v => v.lang === locale);
+      const partial = voices.find(v => v.lang.startsWith(locale.split('-')[0]));
+      if (exact) utter.voice = exact;
+      else if (partial) utter.voice = partial;
+    }
+  };
+
+  // Chrome loads voices async; try immediately then on event
+  trySetVoice();
+  if (window.speechSynthesis.onvoiceschanged !== undefined) {
+    window.speechSynthesis.onvoiceschanged = trySetVoice;
+  }
+
+  // Danish: slightly slower for clarity
+  if (locale.startsWith('da')) utter.rate = 0.82;
+  else utter.rate = 0.92;
+
+  utter.onstart = () => btn && btn.classList.add('speaking');
+  utter.onend   = () => btn && btn.classList.remove('speaking');
+  utter.onerror = () => btn && btn.classList.remove('speaking');
+
+  window.speechSynthesis.speak(utter);
 }
 
 // ── Keyboard shortcuts ────────────────────────────────────────────────────
