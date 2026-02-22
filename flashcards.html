@@ -256,18 +256,66 @@ window.onload = () => {
 async function init() {
   showView('loadingView');
   try {
-    const url  = webhookUrl() + '?action=get_cards&v=' + Date.now();
-    const resp = await fetch(url);
-    if (!resp.ok) throw new Error('HTTP ' + resp.status);
-    const data = await resp.json();
-    if (data.status !== 'ok') throw new Error(data.message || 'Unknown error');
-    allCards = data.cards || [];
+    allCards = await fetchCards();
     buildLangFilter();
     buildQueue();
   } catch(err) {
     document.getElementById('errorMsg').textContent = 'Error: ' + err.message + '. Check your webhook URL in ⚙ settings.';
     showView('errorView');
   }
+}
+
+// Fetch cards — tries plain fetch first, falls back to JSONP for mobile browsers
+// that block cross-origin redirects (iOS Safari, etc.)
+function fetchCards() {
+  return new Promise((resolve, reject) => {
+    const base = webhookUrl();
+    const url  = base + '?action=get_cards&v=' + Date.now();
+
+    // Primary: plain fetch with credentials omitted (prevents unnecessary preflight)
+    fetch(url, { credentials: 'omit' })
+      .then(r => {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
+      })
+      .then(data => {
+        if (data.status !== 'ok') throw new Error(data.message || 'Unknown error');
+        resolve(data.cards || []);
+      })
+      .catch(() => {
+        // Fallback: JSONP — bypasses CORS entirely, works on all mobile browsers
+        jsonpFetch(base, resolve, reject);
+      });
+  });
+}
+
+// JSONP loader — injects a <script> tag; no CORS restrictions apply
+function jsonpFetch(base, resolve, reject) {
+  const cbName = '__flashcardsCb_' + Date.now();
+  const script = document.createElement('script');
+  const timer  = setTimeout(() => {
+    cleanup();
+    reject(new Error('Timeout loading cards'));
+  }, 12000);
+
+  function cleanup() {
+    clearTimeout(timer);
+    delete window[cbName];
+    if (script.parentNode) script.parentNode.removeChild(script);
+  }
+
+  window[cbName] = function(data) {
+    cleanup();
+    if (data && data.status === 'ok') {
+      resolve(data.cards || []);
+    } else {
+      reject(new Error((data && data.message) || 'JSONP error'));
+    }
+  };
+
+  script.src = base + '?action=get_cards&callback=' + cbName + '&v=' + Date.now();
+  script.onerror = () => { cleanup(); reject(new Error('Script load failed')); };
+  document.head.appendChild(script);
 }
 
 function saveWebhook() {
