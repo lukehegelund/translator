@@ -241,14 +241,12 @@ let sessionWrong  = 0;
 let currentFilter = 'all';
 
 function webhookUrl() {
-  return localStorage.getItem('webhookUrl') || DEFAULT_WEBHOOK;
+  // Use a flashcard-specific key so it never collides with the translator's webhookUrl
+  return localStorage.getItem('flashcardWebhookUrl') || DEFAULT_WEBHOOK;
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────
 window.onload = () => {
-  if (!localStorage.getItem('webhookUrl')) {
-    localStorage.setItem('webhookUrl', DEFAULT_WEBHOOK);
-  }
   document.getElementById('webhookInput').value = webhookUrl();
   init();
 };
@@ -320,7 +318,7 @@ function jsonpFetch(base, resolve, reject) {
 
 function saveWebhook() {
   const url = document.getElementById('webhookInput').value.trim();
-  localStorage.setItem('webhookUrl', url);
+  localStorage.setItem('flashcardWebhookUrl', url);
   toggleSettings();
   init();
 }
