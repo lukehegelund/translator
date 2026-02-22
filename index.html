@@ -2,450 +2,627 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
-  <title>Luke's Translator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Translator</title>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #22263a;
+      --border: #2e3350;
+      --accent: #6c8aff;
+      --accent2: #a78bfa;
+      --success: #34d399;
+      --text: #f0f2ff;
+      --muted: #6b7280;
+      --pill-active: #6c8aff;
+      --pill-bg: #1a1d27;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: #f0f4f8;
-      min-height: 100vh;
-      padding: 16px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      padding: 0;
     }
 
-    h1 {
-      text-align: center;
-      font-size: 1.4rem;
-      color: #1a202c;
-      margin-bottom: 16px;
-      font-weight: 700;
-    }
-
-    .lang-row {
+    /* ── Header ─────────────────────────────────────── */
+    .header {
+      padding: 20px 20px 0;
       display: flex;
       align-items: center;
-      gap: 8px;
-      margin-bottom: 12px;
+      justify-content: space-between;
     }
 
-    select {
+    .header h1 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      color: var(--text);
+      opacity: 0.9;
+    }
+
+    .save-indicator {
+      font-size: 0.72rem;
+      color: var(--success);
+      opacity: 0;
+      transition: opacity 0.3s;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .save-indicator.show { opacity: 1; }
+    .save-dot {
+      width: 6px; height: 6px;
+      background: var(--success);
+      border-radius: 50%;
+    }
+
+    /* ── Language selector ──────────────────────────── */
+    .lang-section {
+      padding: 20px 20px 0;
+    }
+
+    .lang-pills {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .lang-group {
+      display: flex;
+      background: var(--surface);
+      border-radius: 12px;
+      padding: 4px;
+      gap: 4px;
       flex: 1;
-      padding: 10px 12px;
-      border: 2px solid #e2e8f0;
-      border-radius: 10px;
-      font-size: 1rem;
-      background: white;
-      color: #1a202c;
-      appearance: none;
-      -webkit-appearance: none;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-position: right 12px center;
+      border: 1px solid var(--border);
+    }
+
+    .lang-pill {
+      flex: 1;
+      padding: 9px 12px;
+      border: none;
+      border-radius: 9px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      background: transparent;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    .lang-pill.active {
+      background: var(--accent);
+      color: white;
+      box-shadow: 0 2px 12px rgba(108,138,255,0.4);
     }
 
     .swap-btn {
-      background: #4a6fa5;
-      color: white;
-      border: none;
-      border-radius: 50%;
-      width: 38px;
-      height: 38px;
-      font-size: 1.2rem;
+      width: 40px; height: 40px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      color: var(--accent);
+      font-size: 1.1rem;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
+      transition: all 0.2s;
       flex-shrink: 0;
+    }
+
+    .swap-btn:active {
+      transform: scale(0.92);
+      background: var(--surface2);
+    }
+
+    /* Direction label */
+    .direction-label {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      margin-top: 10px;
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+
+    .direction-label .arrow { color: var(--accent); font-size: 0.85rem; }
+
+    /* ── Main card ──────────────────────────────────── */
+    .card {
+      margin: 16px 20px 0;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      overflow: hidden;
+    }
+
+    .input-area {
+      padding: 16px;
+      border-bottom: 1px solid var(--border);
+      position: relative;
     }
 
     textarea {
       width: 100%;
-      padding: 12px;
-      border: 2px solid #e2e8f0;
-      border-radius: 10px;
-      font-size: 1rem;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text);
+      font-size: 1.05rem;
+      line-height: 1.6;
       resize: none;
-      background: white;
-      color: #1a202c;
-      line-height: 1.5;
-      min-height: 110px;
+      min-height: 100px;
+      font-family: inherit;
     }
 
-    textarea:focus {
-      outline: none;
-      border-color: #4a6fa5;
-    }
+    textarea::placeholder { color: var(--muted); }
 
-    .result-box {
-      width: 100%;
-      padding: 12px;
-      border: 2px solid #e2e8f0;
-      border-radius: 10px;
-      font-size: 1rem;
-      background: #f8fafc;
-      color: #1a202c;
-      min-height: 110px;
-      line-height: 1.5;
-      white-space: pre-wrap;
-      word-break: break-word;
-      margin-bottom: 12px;
-    }
-
-    .result-box.placeholder {
-      color: #a0aec0;
-    }
-
-    .btn-row {
+    .input-actions {
       display: flex;
-      gap: 10px;
-      margin: 12px 0;
-    }
-
-    .btn {
-      flex: 1;
-      padding: 13px;
-      border: none;
-      border-radius: 10px;
-      font-size: 1rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: opacity 0.15s;
-    }
-
-    .btn:active { opacity: 0.8; }
-
-    .btn-translate {
-      background: #4a6fa5;
-      color: white;
-    }
-
-    .btn-save {
-      background: #38a169;
-      color: white;
-    }
-
-    .btn-clear {
-      background: #e2e8f0;
-      color: #4a5568;
-      flex: 0 0 auto;
-      padding: 13px 16px;
-    }
-
-    .status {
-      text-align: center;
-      font-size: 0.85rem;
-      margin-bottom: 12px;
-      min-height: 20px;
-      font-weight: 500;
-    }
-
-    .status.success { color: #38a169; }
-    .status.error { color: #e53e3e; }
-    .status.loading { color: #4a6fa5; }
-
-    .history-section {
-      margin-top: 20px;
-    }
-
-    .history-section h2 {
-      font-size: 1rem;
-      color: #4a5568;
-      margin-bottom: 10px;
-      font-weight: 600;
-    }
-
-    .history-item {
-      background: white;
-      border-radius: 10px;
-      padding: 10px 12px;
-      margin-bottom: 8px;
-      border: 1px solid #e2e8f0;
-      font-size: 0.9rem;
-    }
-
-    .history-item .original { color: #4a5568; margin-bottom: 4px; }
-    .history-item .translated { color: #1a202c; font-weight: 600; }
-    .history-item .meta { color: #a0aec0; font-size: 0.78rem; margin-top: 4px; }
-
-    .copy-btn {
-      float: right;
-      background: none;
-      border: none;
-      font-size: 1rem;
-      cursor: pointer;
-      color: #a0aec0;
-      padding: 0 4px;
-    }
-
-    .sheet-config {
-      background: white;
-      border-radius: 10px;
-      padding: 12px;
-      margin-bottom: 16px;
-      border: 2px solid #e2e8f0;
-    }
-
-    .sheet-config label {
-      font-size: 0.82rem;
-      color: #718096;
-      display: block;
-      margin-bottom: 4px;
-      font-weight: 600;
-    }
-
-    .sheet-config input {
-      width: 100%;
-      padding: 8px 10px;
-      border: 1px solid #e2e8f0;
-      border-radius: 8px;
-      font-size: 0.9rem;
-      color: #1a202c;
-    }
-
-    .sheet-config input:focus {
-      outline: none;
-      border-color: #4a6fa5;
-    }
-
-    details summary {
-      cursor: pointer;
-      font-size: 0.85rem;
-      color: #718096;
-      margin-bottom: 8px;
-      user-select: none;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 8px;
     }
 
     .char-count {
-      text-align: right;
+      font-size: 0.72rem;
+      color: var(--muted);
+    }
+
+    .clear-btn {
+      background: none;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 0.8rem;
+      padding: 4px 8px;
+      border-radius: 6px;
+      transition: color 0.2s;
+    }
+
+    .clear-btn:active { color: var(--text); }
+
+    /* Result area */
+    .result-area {
+      padding: 16px;
+      min-height: 100px;
+      position: relative;
+    }
+
+    .result-text {
+      font-size: 1.05rem;
+      line-height: 1.6;
+      color: var(--accent2);
+      font-weight: 500;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .result-placeholder {
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .result-actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 12px;
+    }
+
+    .status-badge {
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 20px;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .status-badge.show { opacity: 1; }
+    .status-badge.translating { background: rgba(108,138,255,0.15); color: var(--accent); }
+    .status-badge.saved { background: rgba(52,211,153,0.15); color: var(--success); }
+    .status-badge.error { background: rgba(239,68,68,0.15); color: #f87171; }
+
+    .copy-btn {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      border-radius: 8px;
+      padding: 5px 12px;
       font-size: 0.78rem;
-      color: #a0aec0;
-      margin-top: 4px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .copy-btn:active { color: var(--text); }
+
+    /* ── Translate button ───────────────────────────── */
+    .translate-btn {
+      margin: 14px 20px 0;
+      width: calc(100% - 40px);
+      padding: 15px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: white;
+      border: none;
+      border-radius: 14px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      letter-spacing: 0.03em;
+      transition: all 0.2s;
+      box-shadow: 0 4px 20px rgba(108,138,255,0.3);
+    }
+
+    .translate-btn:active { transform: scale(0.98); opacity: 0.9; }
+    .translate-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    /* ── History ────────────────────────────────────── */
+    .history-section {
+      margin: 20px 20px 0;
+      padding-bottom: 30px;
+    }
+
+    .history-header {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+
+    .history-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 14px;
       margin-bottom: 8px;
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+
+    .history-item:active { border-color: var(--accent); }
+
+    .history-original {
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-bottom: 3px;
+    }
+
+    .history-translated {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .history-meta {
+      font-size: 0.7rem;
+      color: var(--muted);
+      margin-top: 5px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .lang-tag {
+      background: rgba(108,138,255,0.15);
+      color: var(--accent);
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-size: 0.68rem;
+      font-weight: 600;
+    }
+
+    .empty-history {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.85rem;
+      padding: 20px 0;
+    }
+
+    /* ── Webhook config (hidden, settings) ─────────── */
+    .settings-section {
+      margin: 0 20px 0;
+    }
+
+    details summary {
+      font-size: 0.75rem;
+      color: var(--muted);
+      cursor: pointer;
+      user-select: none;
+      list-style: none;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    details summary::before { content: '⚙'; }
+
+    .settings-inner {
+      margin-top: 10px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px;
+    }
+
+    .settings-inner label {
+      font-size: 0.72rem;
+      color: var(--muted);
+      display: block;
+      margin-bottom: 4px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .settings-inner input {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 10px;
+      color: var(--text);
+      font-size: 0.85rem;
+      outline: none;
+    }
+
+    .settings-inner input:focus { border-color: var(--accent); }
+
+    .save-webhook-btn {
+      margin-top: 8px;
+      padding: 8px 16px;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    /* Divider */
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 16px 20px;
     }
   </style>
 </head>
 <body>
 
-  <h1>🌐 Luke's Translator</h1>
+  <!-- Header -->
+  <div class="header">
+    <h1>Translator</h1>
+    <div class="save-indicator" id="saveIndicator">
+      <div class="save-dot"></div>
+      Saved
+    </div>
+  </div>
 
   <!-- Language selector -->
-  <div class="lang-row">
-    <select id="fromLang">
-      <option value="en">🇺🇸 English</option>
-      <option value="es">🇪🇸 Spanish</option>
-      <option value="da">🇩🇰 Danish</option>
-      <option value="ru">🇷🇺 Russian</option>
-      <option value="fr">🇫🇷 French</option>
-      <option value="de">🇩🇪 German</option>
-      <option value="it">🇮🇹 Italian</option>
-      <option value="pt">🇵🇹 Portuguese</option>
-      <option value="ja">🇯🇵 Japanese</option>
-      <option value="zh">🇨🇳 Chinese</option>
-      <option value="ko">🇰🇷 Korean</option>
-      <option value="ar">🇸🇦 Arabic</option>
-    </select>
-    <button class="swap-btn" onclick="swapLanguages()" title="Swap languages">⇄</button>
-    <select id="toLang">
-      <option value="es">🇪🇸 Spanish</option>
-      <option value="en">🇺🇸 English</option>
-      <option value="da">🇩🇰 Danish</option>
-      <option value="ru">🇷🇺 Russian</option>
-      <option value="fr">🇫🇷 French</option>
-      <option value="de">🇩🇪 German</option>
-      <option value="it">🇮🇹 Italian</option>
-      <option value="pt">🇵🇹 Portuguese</option>
-      <option value="ja">🇯🇵 Japanese</option>
-      <option value="zh">🇨🇳 Chinese</option>
-      <option value="ko">🇰🇷 Korean</option>
-      <option value="ar">🇸🇦 Arabic Arabic</option>
-    </select>
+  <div class="lang-section">
+    <div class="lang-pills">
+      <div class="lang-group" id="langGroup">
+        <button class="lang-pill active" data-lang="es" onclick="selectLang('es')">Spanish</button>
+        <button class="lang-pill" data-lang="da" onclick="selectLang('da')">Danish</button>
+      </div>
+      <button class="swap-btn" onclick="toggleDirection()" title="Swap direction">⇄</button>
+    </div>
+    <div class="direction-label">
+      <span id="fromLabel">English</span>
+      <span class="arrow">→</span>
+      <span id="toLabel">Spanish</span>
+    </div>
   </div>
 
-  <!-- Input -->
-  <textarea id="inputText" placeholder="Type text to translate..." oninput="updateCharCount()" onkeydown="handleKey(event)"></textarea>
-  <div class="char-count"><span id="charCount">0</span> characters</div>
+  <!-- Main card -->
+  <div class="card">
+    <div class="input-area">
+      <textarea id="inputText" placeholder="Type to translate..." oninput="updateCharCount()" onkeydown="handleKey(event)" rows="4"></textarea>
+      <div class="input-actions">
+        <span class="char-count" id="charCount">0 chars</span>
+        <button class="clear-btn" onclick="clearAll()">Clear</button>
+      </div>
+    </div>
+    <div class="result-area">
+      <div id="resultContent" class="result-placeholder">Translation appears here</div>
+      <div class="result-actions">
+        <span class="status-badge" id="statusBadge"></span>
+        <button class="copy-btn" onclick="copyResult()">Copy</button>
+      </div>
+    </div>
+  </div>
 
   <!-- Translate button -->
-  <div class="btn-row">
-    <button class="btn btn-translate" onclick="doTranslate()">Translate</button>
-    <button class="btn btn-clear" onclick="clearAll()">✕</button>
+  <button class="translate-btn" id="translateBtn" onclick="doTranslate()">Translate</button>
+
+  <div class="divider"></div>
+
+  <!-- Settings -->
+  <div class="settings-section">
+    <details>
+      <summary>Sheet settings</summary>
+      <div class="settings-inner">
+        <label>Apps Script Webhook URL</label>
+        <input type="url" id="webhookInput" placeholder="https://script.google.com/macros/s/..." />
+        <button class="save-webhook-btn" onclick="saveWebhook()">Save</button>
+      </div>
+    </details>
   </div>
 
-  <!-- Status -->
-  <div class="status" id="status"></div>
+  <div class="divider"></div>
 
-  <!-- Result -->
-  <div class="result-box placeholder" id="resultBox">Translation will appear here...</div>
-
-  <!-- Save button -->
-  <div class="btn-row">
-    <button class="btn btn-save" onclick="saveToSheet()" id="saveBtn" disabled>💾 Save to Google Sheet</button>
-    <button class="btn btn-clear" onclick="copyResult()" id="copyBtn" style="flex:0 0 auto;padding:13px 16px;" title="Copy">📋</button>
-  </div>
-
-  <!-- Google Sheet config -->
-  <details>
-    <summary>⚙️ Google Sheet settings</summary>
-    <div class="sheet-config">
-      <label>Sheet ID</label>
-      <input type="text" id="sheetId" placeholder="Paste your Google Sheet ID here" />
-      <label style="margin-top:8px;">Sheet Tab Name</label>
-      <input type="text" id="sheetTab" value="Translations" />
-      <label style="margin-top:8px;">Your Email (for API calls)</label>
-      <input type="email" id="userEmail" value="lukehegelund@gmail.com" />
-    </div>
-  </details>
-
-  <!-- Local history -->
+  <!-- History -->
   <div class="history-section">
-    <h2>📋 Recent Translations</h2>
+    <div class="history-header">Recent</div>
     <div id="historyList"></div>
   </div>
 
   <script>
-    // ─── State ───────────────────────────────────────────────
+    // ── State ─────────────────────────────────────────────────
     let currentTranslation = null;
-    let history = JSON.parse(localStorage.getItem('translationHistory') || '[]');
+    let currentLang = 'es'; // es or da
+    let directionEnglishFirst = true; // true = EN→target, false = target→EN
+    let txHistory = JSON.parse(localStorage.getItem('txHistory2') || '[]');
 
-    // ─── Language labels ──────────────────────────────────────
-    const langLabels = {
-      en: 'English', es: 'Spanish', da: 'Danish', ru: 'Russian',
-      fr: 'French', de: 'German', it: 'Italian', pt: 'Portuguese',
-      ja: 'Japanese', zh: 'Chinese', ko: 'Korean', ar: 'Arabic'
+    const langConfig = {
+      es: { code: 'es', name: 'Spanish', tab: 'Spanish' },
+      da: { code: 'da', name: 'Danish',  tab: 'Danish'  }
     };
 
-    // ─── On load ──────────────────────────────────────────────
+    // ── Init ──────────────────────────────────────────────────
     window.onload = () => {
+      const saved = localStorage.getItem('currentLang');
+      if (saved && langConfig[saved]) currentLang = saved;
+      const savedDir = localStorage.getItem('directionEnglishFirst');
+      if (savedDir !== null) directionEnglishFirst = savedDir === 'true';
+      const webhook = localStorage.getItem('webhookUrl');
+      if (webhook) document.getElementById('webhookInput').value = webhook;
+      updateUI();
       renderHistory();
-      // Load saved sheet settings
-      const savedId = localStorage.getItem('sheetId');
-      const savedTab = localStorage.getItem('sheetTab');
-      if (savedId) document.getElementById('sheetId').value = savedId;
-      if (savedTab) document.getElementById('sheetTab').value = savedTab;
     };
 
-    // ─── Char count ───────────────────────────────────────────
-    function updateCharCount() {
-      const len = document.getElementById('inputText').value.length;
-      document.getElementById('charCount').textContent = len;
+    // ── Language selection ────────────────────────────────────
+    function selectLang(lang) {
+      currentLang = lang;
+      localStorage.setItem('currentLang', lang);
+      updateUI();
+      clearResult();
     }
 
-    // ─── Enter key shortcut ───────────────────────────────────
-    function handleKey(e) {
-      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) doTranslate();
-    }
-
-    // ─── Swap languages ───────────────────────────────────────
-    function swapLanguages() {
-      const from = document.getElementById('fromLang');
-      const to = document.getElementById('toLang');
-      const tmp = from.value;
-      from.value = to.value;
-      to.value = tmp;
-
-      // Also swap text if there's a translation
+    function toggleDirection() {
+      directionEnglishFirst = !directionEnglishFirst;
+      localStorage.setItem('directionEnglishFirst', directionEnglishFirst);
+      // Swap input/output if there's a translation
       if (currentTranslation) {
         document.getElementById('inputText').value = currentTranslation;
         updateCharCount();
         clearResult();
       }
+      updateUI();
     }
 
-    // ─── Translate ────────────────────────────────────────────
+    function updateUI() {
+      // Update pills
+      document.querySelectorAll('.lang-pill').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.lang === currentLang);
+      });
+      // Update direction label
+      const langName = langConfig[currentLang].name;
+      document.getElementById('fromLabel').textContent = directionEnglishFirst ? 'English' : langName;
+      document.getElementById('toLabel').textContent = directionEnglishFirst ? langName : 'English';
+    }
+
+    // ── Input helpers ─────────────────────────────────────────
+    function updateCharCount() {
+      const len = document.getElementById('inputText').value.length;
+      document.getElementById('charCount').textContent = len + ' chars';
+    }
+
+    function handleKey(e) {
+      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) doTranslate();
+    }
+
+    // ── Translate ─────────────────────────────────────────────
     async function doTranslate() {
       const text = document.getElementById('inputText').value.trim();
-      if (!text) { setStatus('Please enter some text.', 'error'); return; }
+      if (!text) return;
 
-      const from = document.getElementById('fromLang').value;
-      const to = document.getElementById('toLang').value;
+      const cfg = langConfig[currentLang];
+      const from = directionEnglishFirst ? 'en' : cfg.code;
+      const to   = directionEnglishFirst ? cfg.code : 'en';
 
-      setStatus('Translating...', 'loading');
-      setResult('', true);
-      document.getElementById('saveBtn').disabled = true;
+      setStatus('Translating…', 'translating');
+      setResult(null);
+      document.getElementById('translateBtn').disabled = true;
 
       try {
-        const langPair = `${from}|${to}`;
-        const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${langPair}&de=lukehegelund@gmail.com`;
-
-        const response = await fetch(url);
-        const data = await response.json();
+        const url = 'https://api.mymemory.translated.net/get?q='
+          + encodeURIComponent(text)
+          + '&langpair=' + from + '|' + to
+          + '&de=lukehegelund@gmail.com';
+        const data = await (await fetch(url)).json();
 
         if (data.responseStatus === 200) {
-          const translated = data.responseData.translatedText;
-          currentTranslation = translated;
-          setResult(translated, false);
-          setStatus('✓ Translated', 'success');
-          document.getElementById('saveBtn').disabled = false;
+          currentTranslation = data.responseData.translatedText;
+          setResult(currentTranslation);
+          setStatus('', '');
+          // Auto-save
+          autoSave(text, currentTranslation, cfg);
         } else {
-          setStatus('Translation failed. Try again.', 'error');
+          setStatus('Failed — try again', 'error');
         }
-      } catch (err) {
-        setStatus('Network error. Check your connection.', 'error');
+      } catch(err) {
+        setStatus('Network error', 'error');
       }
+      document.getElementById('translateBtn').disabled = false;
     }
 
-    // ─── Save to Google Sheet (via Apps Script webhook) ───────
-    async function saveToSheet() {
-      const sheetId = document.getElementById('sheetId').value.trim();
-      const sheetTab = document.getElementById('sheetTab').value.trim() || 'Translations';
-      const userEmail = document.getElementById('userEmail').value.trim();
-
-      // Save settings
-      localStorage.setItem('sheetId', sheetId);
-      localStorage.setItem('sheetTab', sheetTab);
-
-      if (!currentTranslation) { setStatus('Nothing to save.', 'error'); return; }
-
-      const original = document.getElementById('inputText').value.trim();
-      const from = langLabels[document.getElementById('fromLang').value] || document.getElementById('fromLang').value;
-      const to = langLabels[document.getElementById('toLang').value] || document.getElementById('toLang').value;
+    // ── Auto-save ─────────────────────────────────────────────
+    async function autoSave(original, translated, cfg) {
       const now = new Date().toLocaleString();
+      // Always save to English→target form for the sheet
+      const englishText = directionEnglishFirst ? original : translated;
+      const targetText  = directionEnglishFirst ? translated : original;
+
+      const entry = {
+        original: englishText,
+        translated: targetText,
+        language: cfg.tab,
+        time: now,
+        langCode: cfg.code
+      };
 
       // Save to local history
-      const entry = { original, translated: currentTranslation, from, to, time: now };
-      history.unshift(entry);
-      if (history.length > 50) history = history.slice(0, 50);
-      localStorage.setItem('translationHistory', JSON.stringify(history));
+      txHistory.unshift({ original, translated, langName: cfg.name, time: now, dirEnFirst: directionEnglishFirst });
+      if (txHistory.length > 50) txHistory = txHistory.slice(0, 50);
+      localStorage.setItem('txHistory2', JSON.stringify(txHistory));
       renderHistory();
 
-      // If no sheet ID, just save locally
-      if (!sheetId) {
-        setStatus('✓ Saved locally (no Sheet ID configured)', 'success');
-        return;
-      }
-
-      // Try to post to Google Apps Script webhook
+      // Post to webhook
       const webhookUrl = localStorage.getItem('webhookUrl');
-      if (!webhookUrl) {
-        setStatus('✓ Saved locally. Set up webhook to sync to Sheets.', 'success');
-        return;
-      }
+      if (!webhookUrl) return;
 
-      setStatus('Saving to Sheet...', 'loading');
       try {
         await fetch(webhookUrl, {
           method: 'POST',
           mode: 'no-cors',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ original, translated: currentTranslation, from, to, time: now, sheetId, sheetTab })
+          body: JSON.stringify(entry)
         });
-        setStatus('✓ Saved to Google Sheet!', 'success');
-      } catch (err) {
-        setStatus('✓ Saved locally (Sheet sync failed)', 'success');
+        showSaveIndicator();
+      } catch(e) {
+        // Silent fail — still saved locally
       }
     }
 
-    // ─── Copy result ──────────────────────────────────────────
+    function showSaveIndicator() {
+      const el = document.getElementById('saveIndicator');
+      el.classList.add('show');
+      setTimeout(() => el.classList.remove('show'), 2500);
+    }
+
+    // ── Copy ──────────────────────────────────────────────────
     function copyResult() {
       if (!currentTranslation) return;
       navigator.clipboard.writeText(currentTranslation).then(() => {
-        setStatus('✓ Copied!', 'success');
+        setStatus('Copied!', 'saved');
         setTimeout(() => setStatus('', ''), 2000);
       });
     }
 
-    // ─── Clear ────────────────────────────────────────────────
+    // ── Clear ─────────────────────────────────────────────────
     function clearAll() {
       document.getElementById('inputText').value = '';
       updateCharCount();
@@ -455,55 +632,73 @@
 
     function clearResult() {
       currentTranslation = null;
-      setResult('', true);
-      document.getElementById('saveBtn').disabled = true;
+      setResult(null);
     }
 
-    // ─── UI helpers ───────────────────────────────────────────
+    // ── Webhook ───────────────────────────────────────────────
+    function saveWebhook() {
+      const url = document.getElementById('webhookInput').value.trim();
+      localStorage.setItem('webhookUrl', url);
+      setStatus('Webhook saved!', 'saved');
+      setTimeout(() => setStatus('', ''), 2000);
+    }
+
+    // ── UI helpers ────────────────────────────────────────────
     function setStatus(msg, type) {
-      const el = document.getElementById('status');
+      const el = document.getElementById('statusBadge');
       el.textContent = msg;
-      el.className = `status ${type}`;
+      el.className = 'status-badge' + (msg ? ' show ' + type : '');
     }
 
-    function setResult(text, isPlaceholder) {
-      const el = document.getElementById('resultBox');
-      el.textContent = isPlaceholder ? 'Translation will appear here...' : text;
-      el.className = isPlaceholder ? 'result-box placeholder' : 'result-box';
+    function setResult(text) {
+      const el = document.getElementById('resultContent');
+      if (text) {
+        el.textContent = text;
+        el.className = 'result-text';
+      } else {
+        el.textContent = 'Translation appears here';
+        el.className = 'result-placeholder';
+      }
     }
 
-    // ─── History ──────────────────────────────────────────────
+    // ── History ───────────────────────────────────────────────
     function renderHistory() {
       const list = document.getElementById('historyList');
-      if (history.length === 0) {
-        list.innerHTML = '<div style="color:#a0aec0;font-size:0.85rem;text-align:center;">No translations yet</div>';
+      if (!txHistory.length) {
+        list.innerHTML = '<div class="empty-history">No translations yet</div>';
         return;
       }
-      list.innerHTML = history.slice(0, 10).map((item, i) => `
-        <div class="history-item">
-          <button class="copy-btn" onclick="reuseHistory(${i})" title="Use again">↩</button>
-          <div class="original">${escHtml(item.original)} <span style="color:#a0aec0;font-size:0.78rem">(${item.from})</span></div>
-          <div class="translated">${escHtml(item.translated)} <span style="color:#a0aec0;font-weight:400;font-size:0.78rem">(${item.to})</span></div>
-          <div class="meta">${item.time}</div>
+      list.innerHTML = txHistory.slice(0, 8).map((item, i) => `
+        <div class="history-item" onclick="reuseHistory(${i})">
+          <div class="history-original">${esc(item.original)}</div>
+          <div class="history-translated">${esc(item.translated)}</div>
+          <div class="history-meta">
+            <span class="lang-tag">${item.langName}</span>
+            ${item.time}
+          </div>
         </div>
       `).join('');
     }
 
     function reuseHistory(i) {
-      const item = history[i];
+      const item = txHistory[i];
       document.getElementById('inputText').value = item.original;
       updateCharCount();
-      // Set language selectors
-      const fromSel = document.getElementById('fromLang');
-      const toSel = document.getElementById('toLang');
-      const fromCode = Object.keys(langLabels).find(k => langLabels[k] === item.from);
-      const toCode = Object.keys(langLabels).find(k => langLabels[k] === item.to);
-      if (fromCode) fromSel.value = fromCode;
-      if (toCode) toSel.value = toCode;
+      // Match language
+      const match = Object.keys(langConfig).find(k => langConfig[k].name === item.langName);
+      if (match) selectLang(match);
+      directionEnglishFirst = item.dirEnFirst !== false;
+      localStorage.setItem('directionEnglishFirst', directionEnglishFirst);
+      updateUI();
+      clearResult();
     }
 
-    function escHtml(str) {
-      return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    function esc(s) {
+      return String(s)
+        .replace(/&/g,'&amp;')
+        .replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;')
+        .replace(/"/g,'&quot;');
     }
   </script>
 </body>
