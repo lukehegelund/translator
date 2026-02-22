@@ -628,7 +628,7 @@
         // Use regular fetch (not no-cors) so Android Chrome follows the Apps Script redirect
         const resp = await fetch(webhookUrl, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'text/plain' },
           body: JSON.stringify(entry)
         });
         if (resp.ok) showSaveIndicator();
