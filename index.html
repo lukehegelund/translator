@@ -233,6 +233,29 @@
     .status-badge.saved { background: rgba(52,211,153,0.15); color: var(--success); }
     .status-badge.error { background: rgba(239,68,68,0.15); color: #f87171; }
 
+    .speak-btn {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      border-radius: 8px;
+      padding: 6px 11px;
+      font-size: 0.82rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: none; /* hidden until there's a translation */
+    }
+    .speak-btn.visible { display: inline-block; }
+    .speak-btn.speaking {
+      color: var(--accent);
+      border-color: var(--accent);
+      background: rgba(108,138,255,0.12);
+      animation: pulse-speak 1s infinite;
+    }
+    @keyframes pulse-speak {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.6; }
+    }
+
     .copy-btn {
       background: var(--surface2);
       border: 1px solid var(--border);
@@ -439,6 +462,7 @@
       <div id="resultContent" class="result-placeholder">Translation appears here</div>
       <div class="result-actions">
         <span class="status-badge" id="statusBadge"></span>
+        <button class="speak-btn" id="speakBtn" onclick="speakResult()" title="Read aloud">🔊</button>
         <button class="copy-btn" onclick="copyResult()">Copy</button>
       </div>
     </div>
@@ -564,6 +588,9 @@
           currentTranslation = data.responseData.translatedText;
           setResult(currentTranslation);
           setStatus('', '');
+          // Auto-speak the translation
+          const toCode = directionEnglishFirst ? cfg.code : 'en';
+          speak(currentTranslation, TTS_LOCALE[toCode] || toCode);
           // Auto-save
           autoSave(text, currentTranslation, cfg);
         } else {
@@ -658,13 +685,59 @@
 
     function setResult(text) {
       const el = document.getElementById('resultContent');
+      const speakBtn = document.getElementById('speakBtn');
       if (text) {
         el.textContent = text;
         el.className = 'result-text';
+        speakBtn.classList.add('visible');
       } else {
         el.textContent = 'Translation appears here';
         el.className = 'result-placeholder';
+        speakBtn.classList.remove('visible');
+        window.speechSynthesis && window.speechSynthesis.cancel();
       }
+    }
+
+    // ── Text-to-Speech ────────────────────────────────────────
+    // Maps our language codes to BCP-47 locale codes for best voice matching
+    const TTS_LOCALE = {
+      es: 'es-ES',   // Spanish (Spain) — also works for Latin American
+      da: 'da-DK',   // Danish
+      ru: 'ru-RU',   // Russian
+      en: 'en-US',
+    };
+
+    function speakResult() {
+      if (!currentTranslation) return;
+      const cfg   = langConfig[currentLang];
+      const toCode = directionEnglishFirst ? cfg.code : 'en';
+      const locale = TTS_LOCALE[toCode] || toCode;
+      speak(currentTranslation, locale);
+    }
+
+    function speak(text, locale) {
+      if (!window.speechSynthesis) return;
+      window.speechSynthesis.cancel(); // stop any ongoing speech
+
+      const btn = document.getElementById('speakBtn');
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.lang = locale;
+
+      // Try to find a native voice for the locale
+      const voices = window.speechSynthesis.getVoices();
+      const exactVoice = voices.find(v => v.lang === locale);
+      const partialVoice = voices.find(v => v.lang.startsWith(locale.split('-')[0]));
+      if (exactVoice) utter.voice = exactVoice;
+      else if (partialVoice) utter.voice = partialVoice;
+
+      // Danish: slow down a little for clarity
+      if (locale.startsWith('da')) utter.rate = 0.85;
+      else utter.rate = 0.95;
+
+      utter.onstart = () => btn && btn.classList.add('speaking');
+      utter.onend = utter.onerror = () => btn && btn.classList.remove('speaking');
+
+      window.speechSynthesis.speak(utter);
     }
 
     // ── History ───────────────────────────────────────────────
