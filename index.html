@@ -513,12 +513,9 @@
       if (saved && langConfig[saved]) currentLang = saved;
       const savedDir = localStorage.getItem('directionEnglishFirst');
       if (savedDir !== null) directionEnglishFirst = savedDir === 'true';
-      // Pre-populate webhook with default if not yet set
-      if (!localStorage.getItem('webhookUrl')) {
-        localStorage.setItem('webhookUrl', DEFAULT_WEBHOOK);
-      }
-      const webhook = localStorage.getItem('webhookUrl');
-      if (webhook) document.getElementById('webhookInput').value = webhook;
+      // Pre-populate webhook input (use srsWebhookUrl key, shared with flashcard app)
+      const webhook = localStorage.getItem('srsWebhookUrl') || DEFAULT_WEBHOOK;
+      document.getElementById('webhookInput').value = webhook;
       updateUI();
       renderHistory();
     };
@@ -625,17 +622,16 @@
       renderHistory();
 
       // Post to webhook
-      const webhookUrl = localStorage.getItem('webhookUrl');
-      if (!webhookUrl) return;
+      const webhookUrl = localStorage.getItem('srsWebhookUrl') || DEFAULT_WEBHOOK;
 
       try {
-        await fetch(webhookUrl, {
+        // Use regular fetch (not no-cors) so Android Chrome follows the Apps Script redirect
+        const resp = await fetch(webhookUrl, {
           method: 'POST',
-          mode: 'no-cors',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(entry)
         });
-        showSaveIndicator();
+        if (resp.ok) showSaveIndicator();
       } catch(e) {
         // Silent fail — still saved locally
       }
@@ -672,7 +668,7 @@
     // ── Webhook ───────────────────────────────────────────────
     function saveWebhook() {
       const url = document.getElementById('webhookInput').value.trim();
-      localStorage.setItem('webhookUrl', url);
+      localStorage.setItem('srsWebhookUrl', url);
       setStatus('Webhook saved!', 'saved');
       setTimeout(() => setStatus('', ''), 2000);
     }
