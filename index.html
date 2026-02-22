@@ -482,11 +482,17 @@
     };
 
     // ── Init ──────────────────────────────────────────────────
+    const DEFAULT_WEBHOOK = 'https://script.google.com/macros/s/AKfycbxSBROqSze6KE_6aVYj7zeoYGk2qZKBMgMixggUznJaDSPGDFVUtNga-r3RYPBQdR0GPg/exec';
+
     window.onload = () => {
       const saved = localStorage.getItem('currentLang');
       if (saved && langConfig[saved]) currentLang = saved;
       const savedDir = localStorage.getItem('directionEnglishFirst');
       if (savedDir !== null) directionEnglishFirst = savedDir === 'true';
+      // Pre-populate webhook with default if not yet set
+      if (!localStorage.getItem('webhookUrl')) {
+        localStorage.setItem('webhookUrl', DEFAULT_WEBHOOK);
+      }
       const webhook = localStorage.getItem('webhookUrl');
       if (webhook) document.getElementById('webhookInput').value = webhook;
       updateUI();
