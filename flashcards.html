@@ -241,8 +241,8 @@ let sessionWrong  = 0;
 let currentFilter = 'all';
 
 function webhookUrl() {
-  // Use a flashcard-specific key so it never collides with the translator's webhookUrl
-  return localStorage.getItem('flashcardWebhookUrl') || DEFAULT_WEBHOOK;
+  // srsWebhookUrl is shared with the translator app — one setting for both
+  return localStorage.getItem('srsWebhookUrl') || DEFAULT_WEBHOOK;
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────
@@ -318,7 +318,7 @@ function jsonpFetch(base, resolve, reject) {
 
 function saveWebhook() {
   const url = document.getElementById('webhookInput').value.trim();
-  localStorage.setItem('flashcardWebhookUrl', url);
+  localStorage.setItem('srsWebhookUrl', url);
   toggleSettings();
   init();
 }
