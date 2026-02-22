@@ -355,10 +355,23 @@ function buildQueue() {
   due.sort((a, b) => (a.srs_stage || 0) - (b.srs_stage || 0));
 
   if (due.length === 0) {
-    document.getElementById('emptyMsg').textContent =
-      allCards.length === 0
-        ? "No words yet! Translate some words in the Translator app — they'll appear here instantly."
-        : "No cards due right now. Come back tomorrow for your next review! 🌟";
+    let msg;
+    if (allCards.length === 0) {
+      msg = "No words yet! Translate some words in the Translator app — they'll appear here instantly.";
+    } else {
+      // Find the next due date across all (filtered) cards
+      const filtered = currentFilter === 'all' ? allCards : allCards.filter(c => c.language === currentFilter);
+      const nextDates = filtered.map(c => c.next_review).filter(Boolean).sort();
+      if (nextDates.length > 0) {
+        const next = new Date(nextDates[0]);
+        const diffDays = Math.round((next - new Date(today)) / 86400000);
+        const when = diffDays <= 1 ? 'tomorrow' : `in ${diffDays} days (${nextDates[0]})`;
+        msg = `All caught up! Next review ${when}. 🌟`;
+      } else {
+        msg = "All caught up! 🌟";
+      }
+    }
+    document.getElementById('emptyMsg').textContent = msg;
     showView('emptyView');
     return;
   }
