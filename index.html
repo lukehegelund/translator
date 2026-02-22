@@ -268,7 +268,7 @@
 
   <!-- Translate button -->
   <div class="btn-row">
-    <button class="btn btn-translate" onclick="translate()">Translate</button>
+    <button class="btn btn-translate" onclick="doTranslate()">Translate</button>
     <button class="btn btn-clear" onclick="clearAll()">✕</button>
   </div>
 
@@ -333,7 +333,7 @@
 
     // ─── Enter key shortcut ───────────────────────────────────
     function handleKey(e) {
-      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) translate();
+      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) doTranslate();
     }
 
     // ─── Swap languages ───────────────────────────────────────
@@ -353,7 +353,7 @@
     }
 
     // ─── Translate ────────────────────────────────────────────
-    async function translate() {
+    async function doTranslate() {
       const text = document.getElementById('inputText').value.trim();
       if (!text) { setStatus('Please enter some text.', 'error'); return; }
 
