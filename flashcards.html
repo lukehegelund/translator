@@ -349,7 +349,7 @@ function buildQueue() {
   const today = new Date().toISOString().split('T')[0];
   let due = allCards.filter(c => {
     const langOk = currentFilter === 'all' || c.language === currentFilter;
-    const dueOk  = !c.next_review || String(c.next_review) <= today;
+    const dueOk  = !c.next_review || String(c.next_review).slice(0, 10) <= today;
     return langOk && dueOk;
   });
   due.sort((a, b) => (a.srs_stage || 0) - (b.srs_stage || 0));
